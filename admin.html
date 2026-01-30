@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="nav-left">
+            <div class="logo-text">ADMIN PANEL</div>
+        </div>
+        <div class="nav-links"><a href="index.html">Zpět na web</a></div>
+    </nav>
+    <div class="container">
+        <h1>SPRÁVA UŽIVATELŮ & ROLÍ</h1>
+        <p>Vyber až 2 role pro uživatele.</p>
+        <table id="user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Jméno</th>
+                    <th>Role (Max 2)</th>
+                    <th>Akce</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        const pass = localStorage.getItem('pass_temp');
+        const allowedAdmin = ['founder', 'co-founder', 'head manager', 'manager', 'head dev', 'developer'];
+        if (!user || !user.roles.some(r => allowedAdmin.includes(r))) { window.location.href = 'index.html'; }
+
+        const allRoles = [
+            'founder', 'co-founder', 'head manager', 'manager', 'head dev', 'developer',
+            'web developer', 'head admin', 'director', 'admin', 'trial admin', 'user'
+        ];
+
+        async function loadUsers() {
+            const res = await fetch('/.netlify/functions/admin-get-users');
+            const users = await res.json();
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                let checkboxes = '<div class="checkbox-group">';
+                allRoles.forEach(r => {
+                    const checked = u.roles.includes(r) ? 'checked' : '';
+                    checkboxes += `<label><input type="checkbox" class="role-cb-${u.id}" value="${r}" ${checked}> ${r.toUpperCase()}</label>`;
+                });
+                checkboxes += '</div>';
+                tbody.innerHTML += `<tr><td>#${u.id}</td><td><strong>${u.username}</strong></td><td>${checkboxes}</td><td><button onclick="saveRoles(${u.id}, '${u.username}')" style="padding:5px 10px; width:auto; font-size:0.8rem; background:var(--accent);">ULOŽIT</button></td></tr>`;
+            });
+        }
+
+        async function saveRoles(userId, targetUsername) {
+            const checkboxes = document.querySelectorAll(`.role-cb-${userId}:checked`);
+            const selectedRoles = Array.from(checkboxes).map(cb => cb.value);
+
+            if (selectedRoles.length > 2) { alert("❌ Maximálně 2 role!"); return; }
+            if (selectedRoles.length === 0) selectedRoles.push('user'); // Vždy aspoň user
+
+            if (!confirm(`Nastavit role pro ${targetUsername}: ${selectedRoles.join(', ')}?`)) return;
+
+            const res = await fetch('/.netlify/functions/admin-update-roles', {
+                method: 'POST',
+                body: JSON.stringify({ adminUsername: user.username, adminPassword: pass, targetUsername: targetUsername, newRoles: selectedRoles })
+            });
+            const result = await res.json();
+            if (res.ok) { alert('✅ ' + result.message); loadUsers(); } else { alert('❌ ' + result.error); }
+        }
+        loadUsers();
+    </script>
+</body>
+
+</html>

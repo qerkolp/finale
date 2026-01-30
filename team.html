@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>A-Team</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="nav-left"><img src="praharp.png" class="logo-img">
+            <div class="logo-text">CITY OF PRAGUE</div>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Domů</a>
+            <a href="team.html" class="active">A-Team</a>
+            <a href="devs.html">DEV-Team</a>
+            <a href="admin.html" id="admin-link" class="hidden" style="color:var(--accent)">Admin</a>
+            <a href="editor.html" id="editor-link" class="hidden" style="color:var(--primary)">Editor</a>
+            <a href="login.html" class="btn-nav" id="nav-btn">Přihlásit</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>A-TEAM</h1>
+        <div class="team-grid" id="team-container">Načítám...</div>
+    </div>
+    <script src="nav.js"></script>
+    <script>
+        // Config JEN PRO ADMINY
+        const rolesConfig = {
+            'founder': { label: 'FOUNDER', color: '#ed4245', weight: 100 },
+            'co-founder': { label: 'CO-FOUNDER', color: '#ed4245', weight: 90 },
+            'head manager': { label: 'HEAD MANAGER', color: '#1abc9c', weight: 80 },
+            'manager': { label: 'MANAGER', color: '#1abc9c', weight: 70 },
+            'head admin': { label: 'HEAD ADMIN', color: '#3498db', weight: 40 },
+            'director': { label: 'DIRECTOR', color: '#95a5a6', weight: 30 },
+            'admin': { label: 'ADMIN', color: '#3498db', weight: 20 },
+            'trial admin': { label: 'TRIAL ADMIN', color: '#607d8b', weight: 10 }
+        };
+
+        // Funkce pro zjištění nejvyšší role uživatele z A-Teamu
+        function getHighestRole(userRoles) {
+            let highest = { weight: 0, key: null };
+            userRoles.forEach(r => {
+                if (rolesConfig[r] && rolesConfig[r].weight > highest.weight) {
+                    highest = { weight: rolesConfig[r].weight, key: r };
+                }
+            });
+            return highest.key;
+        }
+
+        async function load() {
+            const container = document.getElementById('team-container');
+            const res = await fetch('/.netlify/functions/get-team');
+            const users = await res.json();
+
+            // Filtrujeme uživatele, kteří mají alespoň jednu roli z A-Teamu
+            const aTeam = users.filter(u => u.roles.some(r => rolesConfig[r]));
+
+            // Seřadíme podle nejvyšší role
+            aTeam.sort((a, b) => {
+                const weightA = rolesConfig[getHighestRole(a.roles)]?.weight || 0;
+                const weightB = rolesConfig[getHighestRole(b.roles)]?.weight || 0;
+                return weightB - weightA;
+            });
+
+            container.innerHTML = '';
+            aTeam.forEach(u => {
+                // Zobrazíme jen A-Team role
+                const userAdminRoles = u.roles.filter(r => rolesConfig[r]);
+                const mainRoleKey = getHighestRole(userAdminRoles); // Hlavní role pro barvu
+                const conf = rolesConfig[mainRoleKey];
+
+                let rolesHtml = '';
+                userAdminRoles.forEach(r => {
+                    const rc = rolesConfig[r];
+                    rolesHtml += `<span class="role-tag" style="color:${rc.color}; border:1px solid ${rc.color}; background:rgba(0,0,0,0.3)">${rc.label}</span>`;
+                });
+
+                container.innerHTML += `
+                <div class="card" style="border-top-color: ${conf.color}">
+                    <div class="avatar"><img src="${u.avatar_url}" style="border-color: ${conf.color}"></div>
+                    <div>${rolesHtml}</div>
+                    <h3>${u.username}</h3>
+                    <p style="font-size:0.8rem; color:#aaa;">${u.bio || ''}</p>
+                </div>`;
+            });
+        }
+        load();
+    </script>
+</body>
+
+</html>

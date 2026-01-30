@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DEV-Team</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="nav-left"><img src="praharp.png" class="logo-img">
+            <div class="logo-text">CITY OF PRAGUE</div>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Domů</a>
+            <a href="team.html">A-Team</a>
+            <a href="devs.html" class="active">DEV-Team</a>
+            <a href="admin.html" id="admin-link" class="hidden" style="color:var(--accent)">Admin</a>
+            <a href="editor.html" id="editor-link" class="hidden" style="color:var(--primary)">Editor</a>
+            <a href="login.html" class="btn-nav" id="nav-btn">Přihlásit</a>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>DEVELOPMENT TÝM</h1>
+        <div class="team-grid" id="team-container">Načítám...</div>
+    </div>
+    <script src="nav.js"></script>
+    <script>
+        // Config JEN PRO DEVY (včetně nové role)
+        const devConfig = {
+            'head dev': { label: 'HEAD DEV', color: '#f1c40f', weight: 60 },
+            'developer': { label: 'DEVELOPER', color: '#c27c0e', weight: 50 },
+            'web developer': { label: 'WEB DEV', color: '#00c3ff', weight: 40 } // NOVÁ ROLE
+        };
+
+        function getHighestDevRole(userRoles) {
+            let highest = { weight: 0, key: null };
+            userRoles.forEach(r => { if (devConfig[r] && devConfig[r].weight > highest.weight) highest = { weight: devConfig[r].weight, key: r }; });
+            return highest.key;
+        }
+
+        async function load() {
+            const container = document.getElementById('team-container');
+            const res = await fetch('/.netlify/functions/get-team');
+            const users = await res.json();
+
+            const devs = users.filter(u => u.roles.some(r => devConfig[r]));
+            devs.sort((a, b) => (devConfig[getHighestDevRole(b.roles)]?.weight || 0) - (devConfig[getHighestDevRole(a.roles)]?.weight || 0));
+
+            container.innerHTML = '';
+            if (devs.length === 0) container.innerHTML = '<p>Žádní vývojáři.</p>';
+
+            devs.forEach(u => {
+                const userDevRoles = u.roles.filter(r => devConfig[r]);
+                const mainRoleKey = getHighestDevRole(userDevRoles);
+                const conf = devConfig[mainRoleKey];
+                let rolesHtml = '';
+                userDevRoles.forEach(r => { const rc = devConfig[r]; rolesHtml += `<span class="role-tag" style="color:${rc.color}; border:1px solid ${rc.color}; background:rgba(0,0,0,0.3)">${rc.label}</span>`; });
+
+                container.innerHTML += `
+                <div class="card" style="border-top-color: ${conf.color}">
+                    <div class="avatar"><img src="${u.avatar_url}" style="border-color: ${conf.color}"></div>
+                    <div>${rolesHtml}</div>
+                    <h3>${u.username}</h3>
+                    <p style="font-size:0.8rem; color:#aaa;">${u.bio || ''}</p>
+                </div>`;
+            });
+        }
+        load();
+    </script>
+</body>
+
+</html>

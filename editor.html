@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Editor Webu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="nav-left">
+            <div class="logo-text" style="color:var(--primary)">WEB EDITOR</div>
+        </div>
+        <div class="nav-links"><a href="index.html">Zpět na web</a></div>
+    </nav>
+    <div class="container form-container" style="max-width: 800px;">
+        <h1>ÚPRAVA DOMOVSKÉ STRÁNKY</h1>
+
+        <label style="color:var(--primary); font-weight:bold;">Hlavní nadpis (Headline)</label>
+        <input type="text" id="headline">
+
+        <label style="color:var(--primary); font-weight:bold;">Podnadpis (Subtext)</label>
+        <input type="text" id="subtext">
+
+        <label style="color:var(--primary); font-weight:bold;">Status Serveru</label>
+        <select id="status_select" style="background:#1e1e2f;">
+            <option value="Online">🟢 Online</option>
+            <option value="Offline">🔴 Offline</option>
+            <option value="Údržba">🟠 Údržba</option>
+        </select>
+
+        <label style="color:var(--primary); font-weight:bold;">Hlavní obsah (HTML povoleno)</label>
+        <textarea id="body_content" style="height: 300px; font-family: monospace;"></textarea>
+
+        <div
+            style="background: rgba(0, 195, 255, 0.1); padding: 20px; border-radius: 10px; border: 1px solid var(--primary); margin-top: 30px;">
+            <label style="color: var(--primary); font-weight: bold;">🔒 Pro uložení zadej své heslo:</label>
+            <input type="password" id="password_verify" style="margin-bottom: 0; border-color: var(--primary);">
+        </div>
+        <br>
+        <button onclick="saveHome()" class="btn-submit">PUBLIKOVAT ZMĚNY</button>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || !user.roles.includes('web developer')) { alert('Přístup zamítnut.'); window.location.href = 'index.html'; }
+
+        async function loadData() {
+            const res = await fetch('/.netlify/functions/get-home');
+            const data = await res.json();
+            document.getElementById('headline').value = data.headline;
+            document.getElementById('subtext').value = data.subtext;
+            document.getElementById('body_content').value = data.body_content;
+            document.getElementById('status_select').value = data.server_status;
+        }
+
+        async function saveHome() {
+            const pass = document.getElementById('password_verify').value;
+            if (!pass) return alert("Zadej heslo!");
+
+            const res = await fetch('/.netlify/functions/update-home', {
+                method: 'POST',
+                body: JSON.stringify({
+                    username: user.username, password: pass,
+                    headline: document.getElementById('headline').value,
+                    subtext: document.getElementById('subtext').value,
+                    bodyContent: document.getElementById('body_content').value,
+                    status: document.getElementById('status_select').value
+                })
+            });
+            if (res.ok) { alert("✅ Web aktualizován!"); } else { const d = await res.json(); alert("❌ " + d.error); }
+        }
+        loadData();
+    </script>
+</body>
+
+</html>

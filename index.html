@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>City of Prague - Domů</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="nav-left">
+            <img src="praharp.png" alt="Logo" class="logo-img">
+            <div class="logo-text">CITY OF PRAGUE</div>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="active">Domů</a>
+            <a href="team.html">A-Team</a>
+            <a href="devs.html">DEV-Team</a>
+            <a href="apply.html">Whitelist</a>
+            <a href="admin.html" id="admin-link" class="hidden" style="color:var(--accent)">Admin</a>
+            <a href="editor.html" id="editor-link" class="hidden" style="color:var(--primary)">Editor Webu</a>
+            <a href="login.html" class="btn-nav" id="nav-btn">Přihlásit</a>
+        </div>
+    </nav>
+
+    <header
+        style="text-align: center; padding: 100px 20px; background: radial-gradient(circle at center, #1e1e2f 0%, var(--dark) 70%);">
+        <h1 style="font-size: 3.5rem;" id="home-headline">NAČÍTÁM...</h1>
+        <p style="font-size: 1.5rem; color: var(--primary); margin-bottom: 40px;" id="home-subtext">...</p>
+
+        <div style="margin-bottom: 30px;">
+            <span style="background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 20px; font-weight: bold;">
+                Status: <span id="server-status" style="color: #00ff41;">Načítám...</span>
+            </span>
+        </div>
+
+        <div>
+            <a href="https://cfx.re/join/admzze" class="btn-main btn-connect">🎮 PŘIPOJIT SE</a>
+            <a href="https://discord.gg/BXBNkqSJdx" class="btn-main btn-discord">💬 DISCORD</a>
+        </div>
+    </header>
+
+    <div class="container" id="home-body">
+        Načítám obsah...
+    </div>
+
+    <script src="nav.js"></script>
+    <script>
+        async function loadHome() {
+            try {
+                const res = await fetch('/.netlify/functions/get-home');
+                const data = await res.json();
+                document.getElementById('home-headline').innerText = data.headline;
+                document.getElementById('home-subtext').innerText = data.subtext;
+                document.getElementById('home-body').innerHTML = data.body_content;
+
+                const statusEl = document.getElementById('server-status');
+                statusEl.innerText = data.server_status;
+                statusEl.style.color = data.server_status === 'Online' ? '#00ff41' : '#ff5555';
+
+            } catch (err) { console.error(err); }
+        }
+        loadHome();
+    </script>
+</body>
+
+</html>

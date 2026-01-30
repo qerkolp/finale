@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Můj Účet</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="nav-left"><img src="praharp.png" class="logo-img">
+            <div class="logo-text">CITY OF PRAGUE</div>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Domů</a>
+            <a href="team.html">A-Team</a>
+            <a href="devs.html">DEV-Team</a>
+            <a href="admin.html" id="admin-link" class="hidden" style="color:var(--accent)">Admin</a>
+            <a href="editor.html" id="editor-link" class="hidden" style="color:var(--primary)">Editor</a>
+            <a href="#" class="btn-nav btn-account" id="logout-btn">Odhlásit</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>SPRÁVA ÚČTU</h1>
+
+        <div class="account-layout">
+            <div class="account-sidebar">
+                <img id="preview-avatar" src=""
+                    style="width: 150px; height: 150px; border-radius: 50%; border: 4px solid var(--primary); object-fit: cover; margin-bottom: 20px;">
+                <h2 id="display-name" style="margin: 0;">...</h2>
+                <div id="roles-container" style="margin-top: 10px;">IsLoading...</div>
+            </div>
+
+            <div class="account-main form-container">
+                <h3>Upravit Profil</h3>
+                <label style="color:var(--primary); font-size:0.8rem; text-transform:uppercase; font-weight:bold;">Odkaz
+                    na Avatar (URL)</label>
+                <input type="text" id="avatar_input" placeholder="https://imgur.com/...">
+
+                <label style="color:var(--primary); font-size:0.8rem; text-transform:uppercase; font-weight:bold;">Bio
+                    (Něco o tobě)</label>
+                <textarea id="bio_input" style="height: 120px; resize: vertical;"
+                    placeholder="Jsem občan Prahy..."></textarea>
+
+                <div
+                    style="background: rgba(255, 85, 85, 0.1); padding: 20px; border-radius: 10px; border: 1px solid var(--accent); margin-top: 30px;">
+                    <label style="color: var(--accent); font-weight: bold;">🔒 Pro uložení zadej své heslo:</label>
+                    <input type="password" id="password_verify" style="margin-bottom: 0; border-color: var(--accent);">
+                </div>
+                <br>
+                <button onclick="saveProfile()" class="btn-submit"
+                    style="background: var(--accent); color: white;">ULOŽIT ZMĚNY</button>
+                <p id="status" style="text-align: center; font-weight: bold;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="nav.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) window.location.href = 'login.html';
+
+        // Naplnění dat
+        document.getElementById('display-name').innerText = user.username;
+        document.getElementById('preview-avatar').src = user.avatar_url;
+        document.getElementById('avatar_input').value = user.avatar_url;
+        document.getElementById('bio_input').value = user.bio || "";
+
+        // Vypsání rolí
+        const rolesCont = document.getElementById('roles-container');
+        rolesCont.innerHTML = '';
+        user.roles.forEach(r => {
+            rolesCont.innerHTML += `<span class="role-tag" style="background: #333; color: white; border: 1px solid #555;">${r.toUpperCase()}</span>`;
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', (e) => {
+            e.preventDefault(); localStorage.clear(); window.location.href = 'index.html';
+        });
+
+        async function saveProfile() {
+            const btn = document.querySelector('button.btn-submit');
+            const status = document.getElementById('status');
+            btn.disabled = true; btn.innerText = "UKLÁDÁM...";
+            status.innerText = "";
+
+            const pass = document.getElementById('password_verify').value;
+            if (!pass) { status.innerText = "❌ Zadej heslo!"; status.style.color = "red"; btn.disabled = false; btn.innerText = "ULOŽIT ZMĚNY"; return; }
+
+            const res = await fetch('/.netlify/functions/update-profile', {
+                method: 'POST',
+                body: JSON.stringify({
+                    username: user.username, password: pass,
+                    newAvatar: document.getElementById('avatar_input').value,
+                    newBio: document.getElementById('bio_input').value
+                })
+            });
+            const result = await res.json();
+            if (res.ok) {
+                status.style.color = "#00ff41"; status.innerText = "✅ Uloženo!";
+                localStorage.setItem('user', JSON.stringify(result.user));
+                document.getElementById('preview-avatar').src = result.user.avatar_url;
+                document.getElementById('password_verify').value = "";
+            } else {
+                status.style.color = "#ff5555"; status.innerText = "❌ " + result.error;
+            }
+            btn.disabled = false; btn.innerText = "ULOŽIT ZMĚNY";
+        }
+    </script>
+</body>
+
+</html>
